@@ -20,25 +20,27 @@ void onTick(CRules@ this) {
     log("onTick", "pick phase: " + this.get_bool("pick phase") + 
             ", team picking: " + this.get_u8("team picking"));
     */
-    if (getPlayerCount() == 0 || CountPlayersInTeam(this.getSpectatorTeamNum()) == 0) {
-        ExitPickPhase(this);
-    }
-    else if (this.get_bool("pick phase")) {
-        // Set the team that's picking
-        int teamPicking;
-        int blueCount = CountPlayersInTeam(TEAM_BLUE);
-        int redCount = CountPlayersInTeam(TEAM_RED);
-
-        if (blueCount == redCount) {
-            teamPicking = this.get_u8("first pick");
+    if (this.get_bool("pick phase")) {
+        if (getPlayerCount() == 0 || CountPlayersInTeam(this.getSpectatorTeamNum()) == 0) {
+            ExitPickPhase(this);
         }
         else {
-            teamPicking = blueCount < redCount ? TEAM_BLUE : TEAM_RED;
-        }
+            // Set the team that's picking
+            int teamPicking;
+            int blueCount = CountPlayersInTeam(TEAM_BLUE);
+            int redCount = CountPlayersInTeam(TEAM_RED);
 
-        //log("onTick", "Set team picking to " + teamPicking);
-        this.set_u8("team picking", teamPicking);
-        this.Sync("team picking", true);
+            if (blueCount == redCount) {
+                teamPicking = this.get_u8("first pick");
+            }
+            else {
+                teamPicking = blueCount < redCount ? TEAM_BLUE : TEAM_RED;
+            }
+
+            //log("onTick", "Set team picking to " + teamPicking);
+            this.set_u8("team picking", teamPicking);
+            this.Sync("team picking", true);
+        }
     }
 }
 
@@ -68,15 +70,19 @@ bool onServerProcessChat(CRules@ this, const string &in textIn, string &out text
     // Handle !captains and !pick commands
     string[]@ tokens = textIn.split(" ");
     int tl = tokens.length;
+    log("onServerProcessChat", "called");
 
     if (tl > 0) {
-        if (tokens[0] == "!captains" && tl >= 3) {
+        //log("onServerProcessChat", "tl > 0");
+        if ((tokens[0] == "!captains") && tl >= 3) {
+            //log("onServerProcessChat", "tokens[0]");
             CPlayer@ captain_blue = GetPlayerByIdent(tokens[1]);
             CPlayer@ captain_red  = GetPlayerByIdent(tokens[2]);
             if (captain_blue is null || captain_red is null) {
                 log("onServerProcessChat", "One of the given captain names was invalid.");
             }
             else {
+                //log("onServerProcessChat", "else");
                 ForceAllToSpectate(this);
                 SetBlueCaptain(this, captain_blue);
                 SetRedCaptain(this, captain_red);
@@ -221,6 +227,7 @@ void StartPickPhase(CRules@ this) {
 }
 
 void ExitPickPhase(CRules@ this) {
-    log("StartPickPhase", "Starting pick phase!");
+    log("ExitPickPhase", "Exiting pick phase!");
     this.set_bool("pick phase", false);
+    getNet().server_SendMsg("Picks finished. LET THE GAME BEGIN!");
 }
