@@ -70,10 +70,10 @@ bool onServerProcessChat(CRules@ this, const string &in textIn, string &out text
     // Handle !captains and !pick commands
     string[]@ tokens = textIn.split(" ");
     int tl = tokens.length;
-    log("onServerProcessChat", "called");
+    //log("onServerProcessChat", "called");
 
     if (tl > 0) {
-        //log("onServerProcessChat", "tl > 0");
+       // log("onServerProcessChat", "tl > 0");
         if ((tokens[0] == "!captains") && tl >= 3) {
             //log("onServerProcessChat", "tokens[0]");
             CPlayer@ captain_blue = GetPlayerByIdent(tokens[1]);
@@ -108,6 +108,19 @@ bool onServerProcessChat(CRules@ this, const string &in textIn, string &out text
                 }
             }
         }
+        else if (tokens[0] == "!allspec") {
+            if (player.isMod() || IsPlayerCaptain(player))
+                ForceAllToSpectate(this);
+            else 
+                getNet().server_SendMsg("Only a captain or mod can use that command.");
+
+        }
+        else if (tokens[0] == "!nextmap") {
+            if (player.isMod() || IsPlayerCaptain(player))
+                LoadNextMap();
+            else
+                getNet().server_SendMsg("Only a captain or mod can use that command.");
+        }
     }
 
     return true;
@@ -135,12 +148,21 @@ int CountPlayersInTeam(int teamNum) {
     return count;
 }
 
+bool IsPlayerCaptain(CPlayer@ player) {
+    if (player is null) {
+        return false;
+    }
+    else {
+        return player.getUsername() == getRules().get_string("captain blue") || player.getUsername() == getRules().get_string("captain red");
+    }
+}
+
 CPlayer@ GetPlayerByIdent(string ident) {
     // Takes an identifier, which is a prefix of the player's character name
     // or username. If there is 1 matching player then they are returned.
     // If 0 or 2+ then a warning is logged.
     ident = ident.toLower();
-    log("GetPlayerByIdent", "ident = " + ident);
+    //log("GetPlayerByIdent", "ident = " + ident);
     CPlayer@[] matches; // players matching ident
 
     for (int i=0; i < getPlayerCount(); i++) {
@@ -151,7 +173,7 @@ CPlayer@ GetPlayerByIdent(string ident) {
         string charname = p.getCharacterName().toLower();
 
         if (username == ident || charname == ident) {
-            log("GetPlayerByIdent", "exact match found: " + p.getUsername());
+            //log("GetPlayerByIdent", "exact match found: " + p.getUsername());
             return p;
         }
         else if (username.find(ident) >= 0 || charname.find(ident) >= 0) {
@@ -160,7 +182,7 @@ CPlayer@ GetPlayerByIdent(string ident) {
     }
 
     if (matches.length == 1) {
-        log("GetPlayerByIdent", "1 match found: " + matches[0].getUsername());
+        //log("GetPlayerByIdent", "1 match found: " + matches[0].getUsername());
         return matches[0];
     }
     else if (matches.length == 0) {
@@ -201,13 +223,13 @@ void ChangePlayerTeam(CRules@ this, CPlayer@ player, int teamNum) {
 }
 
 void SetBlueCaptain(CRules@ this, CPlayer@ capn) {
-    log("SetBlueCaptain", "Setting captain to: " + capn.getUsername());
+    log("SetBlueCaptain", "Setting blue captain to: " + capn.getUsername());
     this.set_string("captain blue", capn.getUsername());
     ChangePlayerTeam(this, capn, TEAM_BLUE);
 }
 
 void SetRedCaptain(CRules@ this, CPlayer@ capn) {
-    log("SetRedCaptain", "Setting captain to: " + capn.getUsername());
+    log("SetRedCaptain", "Setting red captain to: " + capn.getUsername());
     this.set_string("captain red", capn.getUsername());
     ChangePlayerTeam(this, capn, TEAM_RED);
 }
